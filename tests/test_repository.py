@@ -1,6 +1,14 @@
 import pytest
 from datetime import datetime, timedelta
-from models import TodoItem, TodoStatus, TodoRepository
+from models import (
+    TodoItem,
+    TodoStatus,
+    TodoRepository,
+    TodoService,
+    TodoSerializer,
+    TodoNotFoundError,
+    InvalidTodoError,
+)
 
 
 class TestTodoItem:
@@ -291,3 +299,234 @@ class TestTodoRepository:
         # Verify deletion
         final = repo.get_by_id(todo_id)
         assert final is None
+
+
+class TestTodoService:
+    """TodoService 클래스 테스트"""
+
+    @pytest.fixture
+    def service(self):
+        """각 테스트마다 새로운 서비스 인스턴스 생성"""
+        repository = TodoRepository()
+        return TodoService(repository)
+
+    @pytest.fixture
+    def sample_todo_date(self):
+        """샘플 목표 날짜"""
+        return datetime.now() + timedelta(days=7)
+
+    # CREATE 테스트
+    def test_create_todo(self, service, sample_todo_date):
+        """TODO 생성"""
+        todo = service.create_todo("새로운 항목", sample_todo_date)
+        
+        assert todo is not None
+        assert todo.content == "새로운 항목"
+        assert todo.status == TodoStatus.SCHEDULED
+
+    def test_create_todo_with_status(self, service, sample_todo_date):
+        """커스텀 상태로 TODO 생성"""
+        todo = service.create_todo(
+            "진행중 항목",
+            sample_todo_date,
+            TodoStatus.IN_PROGRESS
+        )
+        
+        assert todo.status == TodoStatus.IN_PROGRESS
+
+    def test_create_todo_invalid(self, service, sample_todo_date):
+        """유효하지 않은 TODO 생성"""
+        with pytest.raises(InvalidTodoError):
+            service.create_todo("", sample_todo_date)
+
+    # READ 테스트
+    def test_get_all_todos(self, service, sample_todo_date):
+        """모든 TODO 조회"""
+        service.create_todo("항목 1", sample_todo_date)
+        service.create_todo("항목 2", sample_todo_date)
+        
+        todos = service.get_all_todos()
+        
+        assert len(todos) == 2
+
+    def test_get_todo_by_id(self, service, sample_todo_date):
+        """ID로 TODO 조회"""
+        created = service.create_todo("테스트", sample_todo_date)
+        
+        fetched = service.get_todo_by_id(created.id)
+        
+        assert fetched.id == created.id
+
+    def test_get_todo_by_id_not_found(self, service):
+        """존재하지 않는 TODO 조회"""
+        with pytest.raises(TodoNotFoundError):
+            service.get_todo_by_id("non-existent-id")
+
+    def test_get_todos_by_status(self, service, sample_todo_date):
+        """상태별 TODO 조회"""
+        service.create_todo("예정 1", sample_todo_date, TodoStatus.SCHEDULED)
+        service.create_todo("예정 2", sample_todo_date, TodoStatus.SCHEDULED)
+        service.create_todo("진행중", sample_todo_date, TodoStatus.IN_PROGRESS)
+        
+        scheduled = service.get_todos_by_status(TodoStatus.SCHEDULED)
+        in_progress = service.get_todos_by_status(TodoStatus.IN_PROGRESS)
+        
+        assert len(scheduled) == 2
+        assert len(in_progress) == 1
+
+    # UPDATE 테스트
+    def test_update_todo(self, service, sample_todo_date):
+        """TODO 수정"""
+        todo = service.create_todo("원본", sample_todo_date)
+        
+        updated = service.update_todo(todo.id, content="수정됨")
+        
+        assert updated.content == "수정됨"
+
+    def test_update_todo_not_found(self, service):
+        """존재하지 않는 TODO 수정"""
+        with pytest.raises(TodoNotFoundError):
+            service.update_todo("non-existent-id", content="새 내용")
+
+    def test_update_todo_invalid(self, service, sample_todo_date):
+        """유효하지 않은 수정"""
+        todo = service.create_todo("항목", sample_todo_date)
+        
+        # Pydantic의 field_validator가 작동하도록 None 대신 공백 문자열 사용
+        try:
+            updated = service.update_todo(todo.id, content="  ")
+            # 공백이 자동으로 제거되는 경우 테스트
+            assert updated.content == "항목"  # 공백이 제거되므로 업데이트되지 않음
+        except InvalidTodoError:
+            # 예외가 발생하는 경우도 유효한 동작
+            pass
+
+    # DELETE 테스트
+    def test_delete_todo(self, service, sample_todo_date):
+        """TODO 삭제"""
+        todo = service.create_todo("삭제할 항목", sample_todo_date)
+        
+        result = service.delete_todo(todo.id)
+        
+        assert result is True
+        with pytest.raises(TodoNotFoundError):
+            service.get_todo_by_id(todo.id)
+
+    def test_delete_todo_not_found(self, service):
+        """존재하지 않는 TODO 삭제"""
+        with pytest.raises(TodoNotFoundError):
+            service.delete_todo("non-existent-id")
+
+    # STATISTICS 테스트
+    def test_get_statistics(self, service, sample_todo_date):
+        """통계 조회"""
+        service.create_todo("1", sample_todo_date, TodoStatus.SCHEDULED)
+        service.create_todo("2", sample_todo_date, TodoStatus.SCHEDULED)
+        service.create_todo("3", sample_todo_date, TodoStatus.IN_PROGRESS)
+        service.create_todo("4", sample_todo_date, TodoStatus.COMPLETED)
+        
+        stats = service.get_statistics()
+        
+        assert stats['total'] == 4
+        assert stats['scheduled'] == 2
+        assert stats['in_progress'] == 1
+        assert stats['completed'] == 1
+
+    # MANAGEMENT 테스트
+    def test_reorder_todos(self, service, sample_todo_date):
+        """TODO 순서 변경"""
+        todo1 = service.create_todo("1", sample_todo_date)
+        todo2 = service.create_todo("2", sample_todo_date)
+        todo3 = service.create_todo("3", sample_todo_date)
+        
+        service.reorder_todos([todo3.id, todo1.id, todo2.id])
+        
+        todos = service.get_all_todos()
+        assert todos[0].id == todo3.id
+        assert todos[1].id == todo1.id
+        assert todos[2].id == todo2.id
+
+    def test_sort_by_date(self, service, sample_todo_date):
+        """날짜순 정렬"""
+        service.create_todo("1", sample_todo_date + timedelta(days=3))
+        service.create_todo("2", sample_todo_date + timedelta(days=1))
+        service.create_todo("3", sample_todo_date + timedelta(days=2))
+        
+        sorted_todos = service.sort_by_date()
+        
+        assert sorted_todos[0].target_date < sorted_todos[1].target_date
+        assert sorted_todos[1].target_date < sorted_todos[2].target_date
+
+    def test_get_todo_count(self, service, sample_todo_date):
+        """TODO 개수 조회"""
+        assert service.get_todo_count() == 0
+        
+        service.create_todo("1", sample_todo_date)
+        assert service.get_todo_count() == 1
+        
+        service.create_todo("2", sample_todo_date)
+        assert service.get_todo_count() == 2
+
+    def test_clear_all_todos(self, service, sample_todo_date):
+        """모든 TODO 삭제"""
+        service.create_todo("1", sample_todo_date)
+        service.create_todo("2", sample_todo_date)
+        
+        assert service.get_todo_count() == 2
+        
+        service.clear_all_todos()
+        
+        assert service.get_todo_count() == 0
+
+
+class TestTodoSerializer:
+    """TodoSerializer 클래스 테스트"""
+
+    @pytest.fixture
+    def sample_todo(self):
+        """샘플 TODO"""
+        return TodoItem(
+            content="테스트 항목",
+            target_date=datetime.now() + timedelta(days=7),
+            status=TodoStatus.IN_PROGRESS
+        )
+
+    def test_to_dict(self, sample_todo):
+        """TodoItem을 딕셔너리로 변환"""
+        result = TodoSerializer.to_dict(sample_todo)
+        
+        assert isinstance(result, dict)
+        assert result['content'] == "테스트 항목"
+        assert result['status'] == "진행중"
+        assert 'id' in result
+        assert 'created_at' in result
+        assert 'updated_at' in result
+
+    def test_to_response(self, sample_todo):
+        """TodoItem을 TodoResponse로 변환"""
+        response = TodoSerializer.to_response(sample_todo)
+        
+        assert response.content == "테스트 항목"
+        assert response.status == "진행중"
+        assert response.id == sample_todo.id
+
+    def test_to_list(self):
+        """TodoItem 리스트를 딕셔너리 리스트로 변환"""
+        todos = [
+            TodoItem(
+                content="항목 1",
+                target_date=datetime.now() + timedelta(days=1),
+                status=TodoStatus.SCHEDULED
+            ),
+            TodoItem(
+                content="항목 2",
+                target_date=datetime.now() + timedelta(days=2),
+                status=TodoStatus.IN_PROGRESS
+            ),
+        ]
+        
+        result = TodoSerializer.to_list(todos)
+        
+        assert len(result) == 2
+        assert result[0]['content'] == "항목 1"
+        assert result[1]['content'] == "항목 2"

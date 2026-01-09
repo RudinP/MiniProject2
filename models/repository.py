@@ -43,12 +43,27 @@ class TodoRepository:
         if not todo:
             return None
 
+        # 수정할 데이터 준비
+        update_data = {}
         if content is not None:
-            todo.content = content
+            update_data['content'] = content
         if target_date is not None:
-            todo.target_date = target_date
+            update_data['target_date'] = target_date
         if status is not None:
-            todo.status = status
+            update_data['status'] = status
+        
+        # Pydantic의 model_validate를 사용하여 검증하면서 업데이트
+        if update_data:
+            # 기존 데이터를 딕셔너리로 변환
+            todo_dict = todo.model_dump()
+            # 새로운 데이터로 업데이트
+            todo_dict.update(update_data)
+            # 검증하면서 새로운 TodoItem 생성
+            validated_todo = TodoItem(**todo_dict)
+            # 기존 객체 업데이트
+            todo.content = validated_todo.content
+            todo.target_date = validated_todo.target_date
+            todo.status = validated_todo.status
 
         todo.updated_at = datetime.now()
         return todo
