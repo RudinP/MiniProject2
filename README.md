@@ -1,4 +1,5 @@
 # Flask 기반 TODO 애플리케이션 - OOP 구조
+<img width="1131" height="837" alt="image" src="https://github.com/user-attachments/assets/8824ce45-ed9a-47fa-8e14-eace125a9d96" />
 
 ## 프로젝트 개요
 **AI Agent 적응 프로젝트**
