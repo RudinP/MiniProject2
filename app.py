@@ -26,8 +26,6 @@ def index():
 def get_todos():
     """모든 TODO 항목 조회"""
     todos = todo_repo.get_all()
-    # 날짜 기준으로 정렬
-    todos = sorted(todos, key=lambda x: x.target_date)
     
     return jsonify([{
         'id': todo.id,
@@ -52,9 +50,6 @@ def get_todos_by_status(status_filter):
         todos = todo_repo.get_by_status(TodoStatus.COMPLETED)
     else:
         return jsonify({'error': '유효하지 않은 상태'}), 400
-    
-    # 날짜 기준으로 정렬
-    todos = sorted(todos, key=lambda x: x.target_date)
     
     return jsonify([{
         'id': todo.id,
@@ -164,22 +159,27 @@ def reorder_todos():
     if not data or 'order' not in data:
         return jsonify({'error': '순서 정보가 없습니다'}), 400
     
-    # 현재는 메모리 저장소이므로 순서를 유지하기 위해 내부 dict를 재구성
+    # 새로운 순서 설정
     new_order = data['order']
-    new_todos = {}
-    
-    for todo_id in new_order:
-        if todo_id in todo_repo._todos:
-            new_todos[todo_id] = todo_repo._todos[todo_id]
-    
-    # 기존 항목들 중 순서 목록에 없는 것들 추가 (만약 있다면)
-    for todo_id, todo in todo_repo._todos.items():
-        if todo_id not in new_todos:
-            new_todos[todo_id] = todo
-    
-    todo_repo._todos = new_todos
+    todo_repo.set_order(new_order)
     
     return jsonify({'message': '순서가 업데이트되었습니다'}), 200
+
+
+@app.route('/api/todos/sort/date', methods=['PUT'])
+def sort_todos_by_date():
+    """TODO 항목을 날짜순으로 정렬"""
+    todo_repo.sort_by_date()
+    
+    todos = todo_repo.get_all()
+    return jsonify([{
+        'id': todo.id,
+        'content': todo.content,
+        'target_date': todo.target_date.isoformat(),
+        'status': todo.status,
+        'created_at': todo.created_at.isoformat(),
+        'updated_at': todo.updated_at.isoformat()
+    } for todo in todos]), 200
 
 
 @app.route('/api/stats', methods=['GET'])

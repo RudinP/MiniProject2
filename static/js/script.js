@@ -15,6 +15,7 @@ const todoDate = document.getElementById('todo-date');
 const todoStatus = document.getElementById('todo-status');
 const todoList = document.getElementById('todo-list');
 const filterTabs = document.querySelectorAll('.tab-btn');
+const sortDateBtn = document.getElementById('sort-date-btn');
 const editModal = document.getElementById('edit-modal');
 const editForm = document.getElementById('edit-form');
 const editContent = document.getElementById('edit-content');
@@ -69,6 +70,9 @@ function setupEventListeners() {
         });
     });
 
+    // 날짜순 정렬 버튼
+    sortDateBtn.addEventListener('click', handleSortByDate);
+
     // 모달 닫기
     closeModalBtn.addEventListener('click', closeModal);
     cancelEditBtn.addEventListener('click', closeModal);
@@ -119,6 +123,31 @@ async function handleAddTodo(e) {
     } catch (error) {
         console.error('Error:', error);
         alert('오류가 발생했습니다.');
+    }
+}
+
+// ========================================
+// TODO 날짜순 정렬
+// ========================================
+
+async function handleSortByDate() {
+    try {
+        const response = await fetch('/api/todos/sort/date', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            loadTodos();
+            updateStats();
+        } else {
+            alert('정렬에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error sorting todos:', error);
+        alert('정렬 중 오류가 발생했습니다.');
     }
 }
 

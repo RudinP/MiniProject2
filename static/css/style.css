@@ -305,6 +305,25 @@ body {
     border-bottom-color: var(--primary-color);
 }
 
+.sort-btn {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--gray-600);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: var(--transition);
+    font-family: inherit;
+    margin-left: auto;
+}
+
+.sort-btn:hover {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
 /* ========================================
    TODO 리스트
    ======================================== */
