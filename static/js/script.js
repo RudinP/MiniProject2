@@ -157,7 +157,7 @@ function renderTodos(todos) {
         const statusClass = getStatusClass(todo.status);
 
         return `
-            <div class="todo-item ${statusClass}">
+            <div class="todo-item ${statusClass}" data-todo-id="${todo.id}" data-todo-content="${escapeHtml(todo.content)}" data-todo-date="${todo.target_date}" data-todo-status="${todo.status}">
                 <div class="todo-info">
                     <div class="todo-content">${escapeHtml(todo.content)}</div>
                     <div class="todo-meta">
@@ -206,16 +206,22 @@ async function openEditModal(todoId) {
     currentEditId = todoId;
 
     try {
-        const response = await fetch(`/api/todos/${todoId}`);
-        if (!response.ok) throw new Error('Failed to load todo');
+        // DOM에서 TODO 데이터 찾기
+        const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
+        
+        if (!todoElement) {
+            throw new Error('TODO element not found');
+        }
 
-        const todo = await response.json();
+        const content = todoElement.getAttribute('data-todo-content');
+        const targetDateStr = todoElement.getAttribute('data-todo-date');
+        const status = todoElement.getAttribute('data-todo-status');
 
-        editContent.value = todo.content;
-        editStatus.value = todo.status;
+        editContent.value = content;
+        editStatus.value = status;
 
         // datetime-local 형식으로 변환
-        const targetDate = new Date(todo.target_date);
+        const targetDate = new Date(targetDateStr);
         const year = targetDate.getFullYear();
         const month = String(targetDate.getMonth() + 1).padStart(2, '0');
         const date = String(targetDate.getDate()).padStart(2, '0');
