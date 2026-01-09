@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO List - 플래너</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <div class="header-content">
+                <h1>📝 TODO 리스트</h1>
+                <p class="subtitle">효율적인 업무 관리를 위한 플래너</p>
+            </div>
+        </header>
+
+        <!-- 통계 섹션 -->
+        <section class="stats-section">
+            <div class="stat-item">
+                <div class="stat-number" id="stat-total">0</div>
+                <div class="stat-label">전체</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number scheduled" id="stat-scheduled">0</div>
+                <div class="stat-label">예정</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number in-progress" id="stat-in-progress">0</div>
+                <div class="stat-label">진행중</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number completed" id="stat-completed">0</div>
+                <div class="stat-label">완료</div>
+            </div>
+        </section>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="main-content">
+            <!-- 좌측: 추가 폼 -->
+            <aside class="sidebar">
+                <div class="form-card">
+                    <h2>새로운 TODO 추가</h2>
+                    <form id="todo-form">
+                        <div class="form-group">
+                            <label for="todo-content">할 일</label>
+                            <input 
+                                type="text" 
+                                id="todo-content" 
+                                placeholder="할 일을 입력하세요..."
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="todo-date">목표 날짜</label>
+                            <input 
+                                type="datetime-local" 
+                                id="todo-date"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="todo-status">상태</label>
+                            <select id="todo-status">
+                                <option value="예정">예정</option>
+                                <option value="진행중">진행중</option>
+                                <option value="완료">완료</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            ✨ TODO 추가
+                        </button>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- 우측: TODO 리스트 -->
+            <section class="todo-section">
+                <!-- 필터 탭 -->
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-filter="all">전체</button>
+                    <button class="tab-btn" data-filter="예정">예정</button>
+                    <button class="tab-btn" data-filter="진행중">진행중</button>
+                    <button class="tab-btn" data-filter="완료">완료</button>
+                </div>
+
+                <!-- TODO 목록 -->
+                <div class="todo-list" id="todo-list">
+                    <div class="loading">로딩 중...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 에디트 모달 -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>TODO 수정</h2>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="edit-content">할 일</label>
+                    <input type="text" id="edit-content" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-date">목표 날짜</label>
+                    <input type="datetime-local" id="edit-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-status">상태</label>
+                    <select id="edit-status">
+                        <option value="예정">예정</option>
+                        <option value="진행중">진행중</option>
+                        <option value="완료">완료</option>
+                    </select>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">수정</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-edit">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
