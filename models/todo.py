@@ -2,7 +2,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional
 from uuid import uuid4
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class TodoStatus(str, Enum):
@@ -45,10 +45,9 @@ class TodoItem(BaseModel):
         data["target_date"] = self.target_date.isoformat()
         return data
 
-    class Config:
-        """Pydantic 설정"""
-        use_enum_values = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "content": "프로젝트 완성하기",
@@ -58,3 +57,4 @@ class TodoItem(BaseModel):
                 "updated_at": "2026-01-09T15:30:00"
             }
         }
+    )
