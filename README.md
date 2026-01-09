@@ -1,93 +1,168 @@
-# TODO 애플리케이션 - OOP 기반 구조
+# Flask 기반 TODO 애플리케이션 - OOP 구조
 
 ## 프로젝트 개요
-이 프로젝트는 OOP(객체지향 프로그래밍) 원칙을 따르는 Flask 기반의 TODO 관리 애플리케이션입니다.
+**AI Agent 적응 프로젝트**
+
+이 프로젝트는 **AI Agent 개발에 적응하기 위한** Flask 기반의 TODO 관리 애플리케이션입니다.
+OOP(객체지향 프로그래밍) 원칙을 따르는 **계층 기반 아키텍처(Layered Architecture)** 로 설계되어 있으며, 명확한 책임 분리와 의존성 주입을 통해 유지보수성과 확장성을 높인 구조입니다.
+
+### 목표
+- Flask를 이용한 RESTful API 개발
+- OOP 설계 원칙 적용 (SOLID)
+- 계층 기반 아키텍처 구현
+- AI Agent와의 상호작용을 위한 확장 가능한 구조
+
+---
 
 ## 아키텍처
 
-### 계층 구조 (Layered Architecture)
+### 계층 기반 아키텍처 (Layered Architecture) - 프로젝트 구조
 
 ```
-┌─────────────────────────────────┐
-│        Views Layer (views.py)   │  <- Flask 라우트, HTTP 요청/응답 처리
-└──────────────┬──────────────────┘
-               │
-┌──────────────▼──────────────────┐
-│      Service Layer (service.py) │  <- 비즈니스 로직
-└──────────────┬──────────────────┘
-               │
-┌──────────────▼──────────────────┐
-│   Repository Layer (repository.py) <- 데이터 접근
-└──────────────┬──────────────────┘
-               │
-┌──────────────▼──────────────────┐
-│     Model Layer (todo.py)       │  <- 데이터 정의
-└─────────────────────────────────┘
+project/
+├── app.py                          # 애플리케이션 진입점
+│
+├── app/
+│   ├── __init__.py
+│   └── app_factory.py             # ← Application Factory 패턴
+│                                    (의존성 주입 및 앱 초기화)
+│
+├── api/
+│   ├── __init__.py
+│   └── routes.py                  # ← Presentation Layer
+│                                    (HTTP 요청/응답 처리)
+│
+├── services/
+│   ├── __init__.py
+│   └── todo_service.py            # ← Business Logic Layer
+│                                    (비즈니스 로직 구현)
+│
+├── repositories/
+│   ├── __init__.py
+│   └── todo_repository.py         # ← Data Access Layer
+│                                    (데이터 영속성)
+│
+├── models/
+│   ├── __init__.py
+│   └── todo.py                    # ← Domain Model Layer
+│                                    (데이터 정의)
+│
+├── utils/
+│   ├── __init__.py
+│   ├── dtos.py                    # ← Data Transfer Objects (DTO)
+│   ├── exceptions.py              # ← Custom Exceptions
+│   └── serializer.py              # ← Object Serializer
+│
+├── templates/                      # ← Frontend (HTML)
+│   └── index.html
+│
+└── static/                         # ← Frontend (CSS, JS)
+    ├── css/
+    │   └── style.css
+    └── js/
+        └── script.js
 ```
 
-### 주요 클래스 및 책임
+### 계층 구조도 (Data Flow)
 
-#### 1. **Model Layer** (`models/todo.py`)
-- `TodoStatus`: TODO의 상태를 정의하는 열거형
-- `TodoItem`: TODO 항목의 데이터 모델 (Pydantic 사용)
-  - 데이터 검증: content, target_date 유효성 검사
-  - 자동 ID 생성, 타임스탬프 관리
+```
+┌─────────────────────────────────────────────────────┐
+│         Presentation Layer (API Routes)             │  
+│  - HTTP 요청 처리                                    │
+│  - 응답 직렬화                                       │
+│  - 에러 핸들링                                       │
+│  (api/routes.py)                                    │
+└──────────────────┬──────────────────────────────────┘
+                   │ (요청/응답)
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│       Business Logic Layer (Services)               │
+│  - 비즈니스 규칙 적용                                │
+│  - 유효성 검증                                       │
+│  - 예외 처리                                         │
+│  (services/todo_service.py)                         │
+└──────────────────┬──────────────────────────────────┘
+                   │ (데이터 조작)
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│       Data Access Layer (Repositories)              │
+│  - CRUD 작업                                        │
+│  - 데이터 조회/저장                                  │
+│  - 쿼리 실행                                        │
+│  (repositories/todo_repository.py)                  │
+└──────────────────┬──────────────────────────────────┘
+                   │ (데이터 접근)
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│        Domain Model Layer (Models)                  │
+│  - 데이터 구조 정의                                  │
+│  - 비즈니스 엔티티                                   │
+│  (models/todo.py)                                  │
+└─────────────────────────────────────────────────────┘
+```
 
-#### 2. **Repository Layer** (`models/repository.py`)
-- `TodoRepository`: 데이터 저장 및 조회 담당
-  - CRUD 작업: create, get_by_id, get_all, update, delete
-  - 상태별 조회: get_by_status
-  - 정렬/순서 관리: sort_by_date, set_order
-  - **책임**: 데이터 영속성 처리 (메모리 기반)
+---
 
-#### 3. **Service Layer** (`models/service.py`)
-- `TodoService`: 비즈니스 로직 구현
-  - Repository를 주입받아 데이터 접근 (의존성 주입)
-  - 고수준 API 제공: create_todo, get_all_todos 등
-  - 예외 처리: TodoNotFoundError, InvalidTodoError 발생
-  - **책임**: 비즈니스 규칙 적용, 예외 처리
+## 각 계층의 역할 및 책임
 
-#### 4. **Serializer** (`models/serializer.py`)
-- `TodoSerializer`: TodoItem을 다양한 형식으로 변환
-  - to_dict(): 딕셔너리로 변환
-  - to_response(): TodoResponse DTO로 변환
-  - to_list(): 리스트 변환
-  - **책임**: 데이터 직렬화
+### 1. **Presentation Layer** (`api/routes.py`)
+- **역할**: HTTP 요청/응답 처리
+- **책임**:
+  - Flask 라우트 정의
+  - HTTP 메서드 처리 (GET, POST, PUT, DELETE)
+  - 요청 데이터 유효성 검증
+  - 응답 직렬화 및 포매팅
+  - 에러 응답 처리
+- **의존성**: Service 클래스
 
-#### 5. **DTOs** (`models/dtos.py`)
-- 요청/응답 데이터 모델 정의
+### 2. **Business Logic Layer** (`services/todo_service.py`)
+- **역할**: 핵심 비즈니스 로직 구현
+- **책임**:
+  - 고수준의 비즈니스 규칙 적용
+  - 데이터 유효성 검증
+  - 비즈니스 예외 처리
+  - 여러 Repository 작업 조율
+- **의존성**: Repository, DTO, Custom Exceptions
+- **의존성 주입**: 생성자를 통해 Repository 주입
+
+### 3. **Data Access Layer** (`repositories/todo_repository.py`)
+- **역할**: 데이터 접근 및 영속성 관리
+- **책임**:
+  - CRUD 작업 (Create, Read, Update, Delete)
+  - 데이터 조회/저장/수정/삭제
+  - 쿼리 실행 및 결과 반환
+  - 데이터 필터링 및 정렬
+- **캡슐화**: 내부 데이터 구조 추상화
+
+### 4. **Domain Model Layer** (`models/todo.py`)
+- **역할**: 비즈니스 엔티티 정의
+- **책임**:
+  - 데이터 구조 정의
+  - 데이터 타입 검증
+  - 비즈니스 규칙 포함 (상태, 유효성)
+  - 객체 직렬화/역직렬화
+
+### 5. **Utility Layer** (`utils/`)
+- **dtos.py**: API 요청/응답 데이터 정의
   - `CreateTodoRequest`: TODO 생성 요청
   - `UpdateTodoRequest`: TODO 수정 요청
   - `TodoResponse`: TODO 응답
-  - `StatsResponse`: 통계 응답
-  - **책임**: API 계약(contract) 정의
+- **exceptions.py**: 커스텀 예외 클래스
+  - `TodoNotFoundError`, `InvalidTodoError`, `TodoValidationError`
+- **serializer.py**: 객체 직렬화
+  - Domain Model을 DTO로 변환
 
-#### 6. **Exceptions** (`models/exceptions.py`)
-- 커스텀 예외 클래스
-  - `TodoException`: 기본 예외
-  - `TodoNotFoundError`: TODO 없음
-  - `InvalidTodoError`: 유효하지 않은 데이터
-  - `TodoValidationError`: 검증 실패
-  - **책임**: 예외 처리 표준화
-
-#### 7. **Views Layer** (`views.py`)
-- Flask 라우트 정의
-- HTTP 요청/응답 처리
-- Service 호출 및 응답 변환
-- 에러 핸들링
-- **책임**: HTTP 인터페이스 구현
-
-#### 8. **Application Factory** (`app_factory.py`)
-- `TodoApp`: Flask 애플리케이션 팩토리 클래스
+### 6. **Application Factory** (`app/app_factory.py`)
+- **역할**: Flask 애플리케이션 초기화
+- **책임**:
   - 앱 설정 관리
-  - 의존성 주입
+  - 의존성 주입 (Repository, Service)
   - 라우트 등록
   - 초기 데이터 설정
-  - **책임**: 애플리케이션 초기화 및 조립
+- **패턴**: Factory 패턴 적용
 
-#### 9. **Entry Point** (`app.py`)
-- 애플리케이션 진입점
-- main() 함수로 앱 실행
+### 7. **Entry Point** (`app.py`)
+- **역할**: 애플리케이션 진입점
 - **책임**: 애플리케이션 시작
 
 ---
@@ -95,27 +170,27 @@
 ## OOP 원칙 적용
 
 ### 1. **단일 책임 원칙 (Single Responsibility Principle)**
-- 각 클래스는 하나의 책임만 가짐
-  - Repository: 데이터 접근
-  - Service: 비즈니스 로직
-  - Serializer: 직렬화
-  - Views: HTTP 처리
+각 클래스는 하나의 책임만 가집니다.
+- `Repository`: 데이터 접근만 담당
+- `Service`: 비즈니스 로직만 담당
+- `Serializer`: 직렬화만 담당
+- `Routes`: HTTP 처리만 담당
 
 ### 2. **개방-폐쇄 원칙 (Open-Closed Principle)**
-- 확장에는 열려있고 수정에는 닫혀있음
+확장에는 열려있고 수정에는 닫혀있습니다.
 - 새로운 Repository 구현 추가 가능 (예: 데이터베이스 연동)
 - Service는 Repository 인터페이스에만 의존
 
 ### 3. **리스코프 치환 원칙 (Liskov Substitution Principle)**
-- Repository의 다양한 구현이 가능
+Repository의 다양한 구현이 가능합니다.
 - 기존 코드 수정 없이 새로운 Repository 사용 가능
 
 ### 4. **인터페이스 분리 원칙 (Interface Segregation Principle)**
-- 작은 크기의 인터페이스 설계
+작은 크기의 인터페이스를 설계합니다.
 - Service는 필요한 메서드만 호출
 
 ### 5. **의존성 역전 원칙 (Dependency Inversion Principle)**
-- Service는 Repository의 구체적 구현이 아닌 추상화에 의존
+Service는 Repository의 구체적 구현이 아닌 추상화에 의존합니다.
 - 생성자 주입을 통한 의존성 주입 패턴 사용
 
 ---
@@ -125,7 +200,7 @@
 ### 애플리케이션 실행
 ```python
 # app.py
-from app_factory import TodoApp
+from app.app_factory import TodoApp
 
 todo_app = TodoApp()
 todo_app.initialize_sample_data()
@@ -134,7 +209,9 @@ todo_app.run(debug=True)
 
 ### Service 사용
 ```python
-from models import TodoRepository, TodoService, TodoStatus
+from models.todo import TodoStatus
+from repositories.todo_repository import TodoRepository
+from services.todo_service import TodoService
 from datetime import datetime, timedelta
 
 # 의존성 주입
@@ -224,36 +301,6 @@ class DatabaseRepository(TodoRepository):
 - 우선순위 레벨
 - 반복 작업
 - 알림 기능
-
----
-
-## 파일 구조
-
-```
-MiniProject2/
-├── app.py                 # 애플리케이션 진입점
-├── app_factory.py         # 애플리케이션 팩토리
-├── views.py               # Flask 라우트
-├── requirements.txt       # 의존성
-├── models/
-│   ├── __init__.py
-│   ├── todo.py           # 모델 정의
-│   ├── repository.py     # 저장소 계층
-│   ├── service.py        # 비즈니스 로직 계층
-│   ├── serializer.py     # 직렬화
-│   ├── dtos.py           # 데이터 전송 객체
-│   └── exceptions.py     # 커스텀 예외
-├── tests/
-│   ├── __init__.py
-│   └── test_repository.py # 테스트
-├── templates/
-│   └── index.html
-└── static/
-    ├── css/
-    │   └── style.css
-    └── js/
-        └── script.js
-```
 
 ---
 
