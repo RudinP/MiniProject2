@@ -157,7 +157,7 @@ function renderTodos(todos) {
         const statusClass = getStatusClass(todo.status);
 
         return `
-            <div class="todo-item ${statusClass}" data-todo-id="${todo.id}" data-todo-content="${escapeHtml(todo.content)}" data-todo-date="${todo.target_date}" data-todo-status="${todo.status}">
+            <div class="todo-item ${statusClass}" draggable="true" data-todo-id="${todo.id}" data-todo-content="${escapeHtml(todo.content)}" data-todo-date="${todo.target_date}" data-todo-status="${todo.status}">
                 <div class="todo-info">
                     <div class="todo-content">${escapeHtml(todo.content)}</div>
                     <div class="todo-meta">
@@ -172,6 +172,9 @@ function renderTodos(todos) {
             </div>
         `;
     }).join('');
+    
+    // 드래그-앤-드롭 이벤트 리스너 설정
+    setupDragAndDrop();
 }
 
 // ========================================
@@ -305,6 +308,104 @@ async function updateStats() {
     } catch (error) {
         console.error('Error loading stats:', error);
     }
+}
+
+// ========================================
+// 드래그-앤-드롭 기능
+// ========================================
+
+let draggedElement = null;
+
+function setupDragAndDrop() {
+    const todoItems = document.querySelectorAll('.todo-item');
+    
+    todoItems.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    
+    // 모든 todo-item에서 drag-over 클래스 제거
+    document.querySelectorAll('.todo-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    if (this !== draggedElement) {
+        this.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (this === draggedElement) {
+        return false;
+    }
+    
+    // 드래그된 요소와 드롭 위치 요소 교환
+    const todoContainer = document.getElementById('todo-list');
+    const allItems = Array.from(todoContainer.querySelectorAll('.todo-item'));
+    
+    const draggedIndex = allItems.indexOf(draggedElement);
+    const targetIndex = allItems.indexOf(this);
+    
+    // DOM에서 위치 교환
+    if (draggedIndex < targetIndex) {
+        draggedElement.parentNode.insertBefore(draggedElement, this.nextSibling);
+    } else {
+        draggedElement.parentNode.insertBefore(draggedElement, this);
+    }
+    
+    // 새로운 순서 정보 저장
+    const newOrder = Array.from(todoContainer.querySelectorAll('.todo-item')).map(item => item.getAttribute('data-todo-id'));
+    
+    // 백엔드에 순서 업데이트 요청
+    try {
+        const response = await fetch('/api/todos/reorder', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ order: newOrder })
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to update order');
+            loadTodos(); // 실패 시 다시 로드
+        }
+    } catch (error) {
+        console.error('Error updating order:', error);
+        loadTodos();
+    }
+    
+    return false;
 }
 
 // ========================================

@@ -326,6 +326,38 @@ body {
     align-items: center;
     transition: var(--transition);
     border: 2px solid transparent;
+    cursor: grab;
+    user-select: none;
+}
+
+.todo-item:active {
+    cursor: grabbing;
+}
+
+.todo-item.dragging {
+    opacity: 0.5;
+    background: var(--gray-200);
+    border-style: dashed;
+}
+
+.todo-item.drag-over {
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+    border-style: solid;
+}
+
+.todo-item.drag-over .todo-content {
+    color: var(--white);
+}
+
+.todo-item.drag-over .todo-meta {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.todo-item.drag-over .todo-status {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--white);
 }
 
 .todo-item:hover {

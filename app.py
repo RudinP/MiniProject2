@@ -156,6 +156,32 @@ def delete_todo(todo_id):
     return jsonify({'message': 'TODO가 삭제되었습니다'}), 200
 
 
+@app.route('/api/todos/reorder', methods=['PUT'])
+def reorder_todos():
+    """TODO 항목의 순서 변경"""
+    data = request.get_json()
+    
+    if not data or 'order' not in data:
+        return jsonify({'error': '순서 정보가 없습니다'}), 400
+    
+    # 현재는 메모리 저장소이므로 순서를 유지하기 위해 내부 dict를 재구성
+    new_order = data['order']
+    new_todos = {}
+    
+    for todo_id in new_order:
+        if todo_id in todo_repo._todos:
+            new_todos[todo_id] = todo_repo._todos[todo_id]
+    
+    # 기존 항목들 중 순서 목록에 없는 것들 추가 (만약 있다면)
+    for todo_id, todo in todo_repo._todos.items():
+        if todo_id not in new_todos:
+            new_todos[todo_id] = todo
+    
+    todo_repo._todos = new_todos
+    
+    return jsonify({'message': '순서가 업데이트되었습니다'}), 200
+
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """TODO 통계"""
