@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
-from .todo import TodoStatus
+from models import TodoStatus
 
 
 class CreateTodoRequest(BaseModel):

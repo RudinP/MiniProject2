@@ -1,9 +1,9 @@
 """TODO 비즈니스 로직 계층"""
 from typing import List, Optional
 from datetime import datetime
-from .todo import TodoItem, TodoStatus
-from .repository import TodoRepository
-from .exceptions import TodoNotFoundError, InvalidTodoError
+from models import TodoItem, TodoStatus
+from repositories import TodoRepository
+from utils import TodoNotFoundError, InvalidTodoError
 
 
 class TodoService:

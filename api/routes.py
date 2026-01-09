@@ -1,13 +1,9 @@
 """Flask 라우트 정의"""
 from flask import render_template, request, jsonify
 from datetime import datetime
-from models import (
-    TodoStatus,
-    TodoService,
-    TodoSerializer,
-    TodoNotFoundError,
-    InvalidTodoError,
-)
+from models import TodoStatus
+from services import TodoService
+from utils import TodoSerializer, TodoNotFoundError, InvalidTodoError
 
 
 def register_routes(app, service: TodoService, serializer: TodoSerializer):

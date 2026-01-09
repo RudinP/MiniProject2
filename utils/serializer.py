@@ -1,6 +1,6 @@
 """TodoItem 직렬화 클래스"""
 from datetime import datetime
-from .todo import TodoItem
+from models import TodoItem
 from .dtos import TodoResponse
 
 

@@ -1,5 +1,5 @@
 """TODO 애플리케이션 엔트리 포인트"""
-from app_factory import TodoApp
+from app import TodoApp
 
 
 def main():

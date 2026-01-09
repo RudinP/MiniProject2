@@ -1,14 +1,9 @@
 import pytest
 from datetime import datetime, timedelta
-from models import (
-    TodoItem,
-    TodoStatus,
-    TodoRepository,
-    TodoService,
-    TodoSerializer,
-    TodoNotFoundError,
-    InvalidTodoError,
-)
+from models import TodoItem, TodoStatus
+from repositories import TodoRepository
+from services import TodoService
+from utils import TodoSerializer, TodoNotFoundError, InvalidTodoError
 
 
 class TestTodoItem:

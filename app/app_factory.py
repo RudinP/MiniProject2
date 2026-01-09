@@ -1,7 +1,12 @@
 """Flask 애플리케이션 설정 및 초기화"""
+import os
 from flask import Flask
 from datetime import datetime
-from models import TodoRepository, TodoService, TodoStatus, TodoSerializer
+from models import TodoStatus
+from repositories import TodoRepository
+from services import TodoService
+from utils import TodoSerializer
+from api import register_routes
 
 
 class TodoApp:
@@ -14,7 +19,14 @@ class TodoApp:
         Args:
             app_name: Flask 앱 이름
         """
-        self.app = Flask(app_name)
+        # 프로젝트 루트 경로
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        self.app = Flask(
+            app_name,
+            template_folder=os.path.join(base_path, 'templates'),
+            static_folder=os.path.join(base_path, 'static')
+        )
         self._configure_app()
         
         # 의존성 주입
@@ -31,7 +43,6 @@ class TodoApp:
 
     def _register_routes(self) -> None:
         """라우트 등록"""
-        from views import register_routes
         register_routes(self.app, self.service, self.serializer)
 
     def initialize_sample_data(self) -> None:

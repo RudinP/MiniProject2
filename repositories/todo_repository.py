@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime
-from .todo import TodoItem, TodoStatus
+from models import TodoItem, TodoStatus
 
 
 class TodoRepository:
